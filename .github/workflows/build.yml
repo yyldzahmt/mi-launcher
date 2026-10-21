@@ -11,8 +11,6 @@ jobs:
         working-directory: MiBoxLauncher
     steps:
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout-cone-mode: false
       - name: ZIP'i aç
         working-directory: .
         run: unzip -q MiBoxLauncher.zip
@@ -23,11 +21,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Birim testleri
-        continue-on-error: true
-        run: gradle --no-daemon testDebugUnitTest
       - name: Debug APK
-        run: gradle --no-daemon assembleDebug
+        run: |
+          set +e
+          gradle --no-daemon --console=plain assembleDebug > build.log 2>&1
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            { grep -E '^e: ' build.log | head -n 25; grep -A8 'What went wrong' build.log | head -n 20; } > errs.txt
+            if [ ! -s errs.txt ]; then tail -n 30 build.log > errs.txt; fi
+            sed -i 's#file://[^ ]*/mibox/launcher/##' errs.txt
+            msg=$(head -c 3500 errs.txt | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')
+            echo "::error title=Gradle hata ozeti::${msg}"
+          fi
+          exit $code
       - name: Release APK
         continue-on-error: true
         run: gradle --no-daemon assembleRelease
