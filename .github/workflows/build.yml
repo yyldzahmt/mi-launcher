@@ -14,6 +14,8 @@ jobs:
       - name: ZIP'i aç
         working-directory: .
         run: unzip -q MiBoxLauncher.zip
+      - name: Kaynak düzeltmesi
+        run: sed -i '/^import androidx.compose.ui.input.key.nativeKeyEvent$/d' app/src/main/java/com/mibox/launcher/ui/Components.kt
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
