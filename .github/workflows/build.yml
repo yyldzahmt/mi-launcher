@@ -1,0 +1,42 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: MiBoxLauncher
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+      - name: ZIP'i aç
+        working-directory: .
+        run: unzip -q MiBoxLauncher.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Birim testleri
+        continue-on-error: true
+        run: gradle --no-daemon testDebugUnitTest
+      - name: Debug APK
+        run: gradle --no-daemon assembleDebug
+      - name: Release APK
+        continue-on-error: true
+        run: gradle --no-daemon assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MiLauncher-debug-apk
+          path: MiBoxLauncher/app/build/outputs/apk/debug/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MiLauncher-release-apk
+          path: MiBoxLauncher/app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
